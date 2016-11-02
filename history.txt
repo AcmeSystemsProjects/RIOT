@@ -1,0 +1,95 @@
+git status
+ 1999  git diff
+ 2000  git clone https://github.com/ant9000/RIOT.git
+ 2001  wget https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q2-update/+download/gcc-arm-none-eabi-5_4-2016q2-20160622-linux.tar.bz2
+ 2002  tar xvf gcc-arm-none-eabi-5_4-2016q2-20160622-linux.tar.bz2
+ 2003  EXTRA_PATH=`pwd`/gcc-arm-none-eabi-5_4-2016q2/bin/
+ 2004  export PATH=$EXTRA_PATH:$PATH
+ 2005  cd RIOT/examples/default
+ 2006  BOARD=yarm make flash
+ 2007  BOARD=yarm make term
+ 2008  BOARD=yarm sudo make term
+ 2009  sudo su - root
+ 2010  ls -al /dev/ttyUSB0 
+ 2011  id
+ 2012  sudo chmod a+w /dev/ttyUSB0
+ 2013  ls -al /dev/ttyUSB0 
+ 2014  sudo chmod a+wr /dev/ttyUSB0
+ 2015  ls -al /dev/ttyUSB0 
+ 2016  BOARD=yarm sudo make term
+ 2017  BOARD=yarm make term
+ 2018  term
+ 2019  vi Makefile 
+ 2020  vi ../../Makefile 
+ 2021  cd ../../
+ 2022  grep term *
+ 2023  view Makefile.include
+ 2024  grep TERMPROG *
+ 2025  ll
+ 2026  cd boards
+ 2027  ll
+ 2028  cd yarm/
+ 2029  ll
+ 2030  ll dist
+ 2031  ll include/
+ 2032  geany include/board.h include/periph_conf.h board.c 
+ 2033  bg
+ 2034  ll
+ 2035  cd ..
+ 2036  ll
+ 2037  cd ..
+ 2038  ll
+ 2039  cd drivers
+ 2040  ll
+ 2041  cd ata8510/
+ 2042  ll
+ 2043  geany *.c
+ 2044  cd ..
+ 2045  ls
+ 2046  cd sys/auto_init/
+ 2047  ll
+ 2048  cd netif/
+ 2049  ll
+ 2050  geany auto_init_ata8510.c
+ 2051  cd ..
+ 2052  cd examples/default/
+ 2053  BOARD=yarm make term
+ 2054  vi Makefile 
+ 2055  vi main.c 
+ 2056  ls
+ 2057  vi main.c 
+ 2058  BOARD=yarm make term
+ 2059  cd ..
+ 2060  ls
+ 2061  cd gnrc_networking/
+ 2062  ll
+ 2063  geany main.c
+ 2064  avrdude --version
+ 2065  which
+ 2066  which avrdude
+ 2067  dpkg -L /usr/bin/avrdude
+ 2068  dpkg -S /usr/bin/avrdude
+ 2069  sudo aptitude
+ 2070  sudo apt-get install aptitude
+ 2071  sudo aptitude
+ 2072  cd ..
+ 2073  cd drivers/
+ 2074  cd ata8510/
+ 2075  ll
+ 2076  cd firmware/
+ 2077  ll
+ 2078  cat README.md 
+ 2079  avrdude -c atmelice_isp -p ata8510 -C +ata8510.conf -U eeprom:w:firmware.hex:i
+ 2080  lsusb
+ 2081  sudo avrdude -c atmelice_isp -p ata8510 -C +ata8510.conf -U eeprom:w:firmware.hex:i
+ 2082  cd ..
+ 2083  cd 
+ 2084  cd RIOT/examples/default
+ 2085  BOARD=yarm make flash
+ 2086  BOARD=yarm make term
+ 2087  ll /dev/ttyUSB0
+ 2088  sudo chmod a+rw /dev/ttyUSB0
+ 2089  BOARD=yarm make term
+ 2090  sudo chmod a+rw /dev/ttyUSB0
+ 2091  BOARD=yarm make term
+ 2092  history 

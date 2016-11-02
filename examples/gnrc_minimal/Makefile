@@ -33,8 +33,20 @@ USEMODULE += gnrc_ipv6
 USEMODULE += gnrc_ndp
 # Additional networking modules that can be dropped if not needed
 USEMODULE += gnrc_icmpv6_echo
+
+# Header's compressions
+#USEMODULE += gnrc_sixlowpan_iphc
+
 # Use minimal standard PRNG
 USEMODULE += prng_minstd
+
+# Add also the shell, some shell commands
+USEMODULE += shell
+USEMODULE += shell_commands
+USEMODULE += ps
+USEMODULE += netstats_l2
+USEMODULE += netstats_ipv6
+USEMODULE += netstats_rpl
 
 CFLAGS += -DGNRC_PKTBUF_SIZE=512 -DGNRC_IPV6_NETIF_ADDR_NUMOF=4 -DGNRC_IPV6_NC_SIZE=1
 
@@ -56,3 +68,35 @@ else
     CFLAGS += -DIEEE802154_DEFAULT_CHANNEL=$(DEFAULT_CHANNEL)
   endif
 endif
+
+
+#
+#> ping6 fe80::ff:fe00:547a
+#_send: data=[
+#	 41 9c 0a 00 00 7a 54 00 fe ff 00 00 02 26 0f
+#-----
+#	 41
+#-----
+#	
+#	 60 00 00 00 00 0c 3a 40 fe 80 00 00 00 00 00 00
+#	 00 00 00 ff fe 00 0f 26 fe 80 00 00 00 00 00 00
+#	 00 00 00 ff fe 00 54 7a
+#-----
+#	 80 00 76 16 00 55 00 01
+#	 55 55 55 55
+#-----
+#	
+#], len=68
+#
+#
+#_send: data=[
+#	 41 9c 29 00 00 7a 54 00 fe ff 00 00 02 26 0f
+#-----
+#	 7a
+#	 33 3a
+#-----
+#	 80 00 6e 08 00 59 00 03 59 59 59 59
+#-----
+#	
+#], len=30
+#

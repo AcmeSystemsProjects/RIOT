@@ -25,6 +25,28 @@
 #include "net/gnrc/netif.h"
 #include "net/gnrc/ipv6/netif.h"
 
+#include "shell.h"
+
+
+int run_shell (void)
+{
+	#define MAIN_QUEUE_SIZE     (8)
+	static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
+
+    /* we need a message queue for the thread running the shell in order to
+     * receive potentially fast incoming networking packets */
+    msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
+    puts("RIOT network stack example application");
+
+    /* start shell */
+    puts("********* All up, running the shell now ********");
+    char line_buf[SHELL_DEFAULT_BUFSIZE];
+    shell_run(0, line_buf, SHELL_DEFAULT_BUFSIZE);
+
+    /* should be never reached */
+    return 0;
+}
+
 int main(void)
 {
     kernel_pid_t ifs[GNRC_NETIF_NUMOF];
@@ -36,13 +58,17 @@ int main(void)
     if (numof > 0) {
         gnrc_ipv6_netif_t *entry = gnrc_ipv6_netif_get(ifs[0]);
         for (int i = 0; i < GNRC_IPV6_NETIF_ADDR_NUMOF; i++) {
-            if ((ipv6_addr_is_link_local(&entry->addrs[i].addr)) && !(entry->addrs[i].flags & GNRC_IPV6_NETIF_ADDR_FLAGS_NON_UNICAST)) {
+            if ((ipv6_addr_is_link_local(&entry->addrs[i].addr)) && 
+				!(entry->addrs[i].flags & GNRC_IPV6_NETIF_ADDR_FLAGS_NON_UNICAST))
+			{
                 char ipv6_addr[IPV6_ADDR_MAX_STR_LEN];
                 ipv6_addr_to_str(ipv6_addr, &entry->addrs[i].addr, IPV6_ADDR_MAX_STR_LEN);
                 printf("My address is %s\n", ipv6_addr);
             }
         }
     }
+
+	run_shell();
 
     /* main thread exits */
     return 0;
