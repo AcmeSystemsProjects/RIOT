@@ -40,8 +40,8 @@
 #define DEBUG_SEND            0x10
 #define DEBUG_RECV            0x20
 
-#define ENABLE_DEBUG      (0)
-//#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+//#define ENABLE_DEBUG      (0)
+#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
 #include "debug.h"
 
 #define _MAX_MHR_OVERHEAD   (25)
@@ -304,6 +304,7 @@ gpio_clear(DEBUG_PIN);
             if ((c++%16) == 0) DEBUG("\n\t");
             DEBUG(" %02x", ((char *)vector[i].iov_base)[j]);
         }
+        DEBUG("\n-----\n\t");
     }
     DEBUG("\n], len=%d\n", c);
 #endif
@@ -387,7 +388,7 @@ static int _recv(netdev2_t *netdev, void *buf, size_t len, void *info)
     /* copy payload */
     ringbuffer_get(&dev->rb, (char *)buf, pkt_len);
 
-#if ENABLE_DEBUG & DEBUG_RECV & DEBUG_PKT_DUMP
+#if ENABLE_DEBUG & (DEBUG_RECV | DEBUG_PKT_DUMP)
     DEBUG(
         "_recv: service=%d, channel=%d, pkt_len=%d, data=[", 
         dev->service, dev->channel, pkt_len
@@ -460,6 +461,8 @@ static int _get(netdev2_t *netdev, netopt_t opt, void *val, size_t max_len)
     if (netdev == NULL) {
         return -ENODEV;
     }
+
+DEBUG("_get: opt=%d\n", opt);
 
     /* getting these options doesn't require the transceiver at all */
     switch (opt) {
@@ -554,6 +557,7 @@ DEBUG("_set: opt=%d\n", opt);
                 res = -EOVERFLOW;
             }
             else {
+				DEBUG("_set: opt NETOPT_ADDRESS: len: %d val: %04x\n", len, *((uint16_t *)val));
                 ata8510_set_addr_short(dev, *((uint16_t *)val));
                 /* don't set res to set netdev2_ieee802154_t::short_addr */
             }
@@ -578,6 +582,18 @@ DEBUG("_set: opt=%d\n", opt);
                 /* don't set res to set netdev2_ieee802154_t::pan */
             }
             break;
+
+        case NETOPT_SRC_LEN:
+        // get/set the address length to choose for the network
+        // device's source address as uint16_t in host byte order 
+            if (len > sizeof(uint16_t)) {
+                res = -EOVERFLOW;
+            }
+            else {
+				DEBUG("_set: TO BE DONE NETOPT_SRC_LEN: len: %d val: %04x\n", len, *((uint16_t *)val));
+            }
+            break;
+
 
 //      case NETOPT_CHANNEL:
 //          if (len != sizeof(uint16_t)) {
@@ -710,6 +726,7 @@ DEBUG("_set: opt=%d\n", opt);
 //          break;
 
         default:
+			DEBUG("_set: UNCATCHED: %d ************+\n", opt);
             break;
     }
 
@@ -793,3 +810,85 @@ static void _isr(netdev2_t *netdev)
     }
 
 }
+
+
+
+
+#if 0
+
+
+NETOPT_CHANNEL,             
+NETOPT_IS_CHANNEL_CLR,      
+NETOPT_ADDRESS,             
+NETOPT_ADDRESS_LONG,
+NETOPT_ADDR_LEN,            
+NETOPT_SRC_LEN,             
+NETOPT_NID,
+NETOPT_IPV6_IID,
+NETOPT_TX_POWER,            
+NETOPT_MAX_PACKET_SIZE,     
+NETOPT_PRELOADING,
+NETOPT_PROMISCUOUSMODE,     
+NETOPT_AUTOACK,             
+NETOPT_ACK_REQ,             
+NETOPT_RETRANS,             
+NETOPT_PROTO,               
+NETOPT_STATE,               
+NETOPT_RAWMODE,             
+NETOPT_RX_START_IRQ,
+NETOPT_RX_END_IRQ,
+NETOPT_TX_START_IRQ,
+NETOPT_TX_END_IRQ,
+NETOPT_AUTOCCA,
+NETOPT_CSMA,
+NETOPT_CSMA_RETRIES,            
+NETOPT_IS_WIRED,
+NETOPT_DEVICE_TYPE,
+NETOPT_CHANNEL_PAGE,
+NETOPT_CCA_THRESHOLD,
+NETOPT_CCA_MODE,
+NETOPT_STATS,
+NETOPT_ENCRYPTION,        
+NETOPT_ENCRYPTION_KEY,    
+NETOPT_RF_TESTMODE,
+NETOPT_NUMOF,
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

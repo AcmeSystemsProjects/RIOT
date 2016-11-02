@@ -71,7 +71,7 @@ extern "C" {
  * @brief   Upper bound for randomised delay in seconds for initial
  *          router solicitation transmissions
  */
-#define GNRC_NDP_MAX_RTR_SOL_DELAY      (1U)
+#define GNRC_NDP_MAX_RTR_SOL_DELAY      (10U)
 
 /**
  * @brief   Interval in seconds between initial router solicitation
