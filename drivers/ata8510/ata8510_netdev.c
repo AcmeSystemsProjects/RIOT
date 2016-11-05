@@ -41,7 +41,10 @@
 #define DEBUG_RECV            0x20
 
 //#define ENABLE_DEBUG      (0)
-#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+//#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+#define ENABLE_DEBUG     (DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+
+
 #include "debug.h"
 
 #define _MAX_MHR_OVERHEAD   (25)
@@ -98,7 +101,6 @@ static void _irq_handler(void *arg)
                 break;
         }
 	}
-
     // SOTA event
 	if (status[ATA8510_EVENTS] & ATA8510_EVENTS_SOTA) {
 #if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
@@ -169,7 +171,7 @@ static void _irq_handler(void *arg)
             if (n < ATA8510_DFIFO_TX_LENGTH) { // DFIFO_TX has free space
                 n = ringbuffer_get(&dev->rb, (char *)data, ATA8510_DFIFO_TX_LENGTH - n);
                 if (n) {
-#if ENABLE_DEBUG & DEBUG_SEND
+#if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
                     DEBUG("_isr#%d: send batch %d bytes\n", dev->interrupts, n);
 #endif
                     ata8510_WriteTxFifo(dev, n, data);
@@ -214,6 +216,7 @@ static void _irq_handler(void *arg)
                 for(int i=0;i<4;i++){ dev->status[i]=status[i]; }
                 netdev->event_callback(netdev, NETDEV2_EVENT_ISR);
 
+				sem_post (&(dev->s_send));
                 break;
 
 		    case ATA8510_STATE_POLLING:
@@ -264,6 +267,8 @@ static int _init(netdev2_t *netdev)
         return -1;
     }
     ringbuffer_init(&dev->rb, (char *)dev->mem, sizeof(dev->mem));
+    
+    sem_init (&(dev->s_send), 0, 0);
 
     DEBUG("[ata8510] init done\n");
 
@@ -296,7 +301,7 @@ gpio_clear(DEBUG_PIN);
         return -EOVERFLOW;
     }
 
-#if ENABLE_DEBUG & (DEBUG_SEND | DEBUG_PKT_DUMP) == (DEBUG_SEND | DEBUG_PKT_DUMP)
+#if ENABLE_DEBUG & (DEBUG_SEND | DEBUG_PKT_DUMP)
     DEBUG("_send: data=[");
     unsigned c=0;
     for (unsigned i=0; i<count; i++) {
@@ -311,13 +316,25 @@ gpio_clear(DEBUG_PIN);
 
     dev->pending_tx++;
     /* make sure ongoing radio activity is finished */
-    i=0;
-    while(dev->busy) {
-        i++;
-        xtimer_usleep(0);
-    }
-    DEBUG("START busy loops: %d\n", i);
+    //i=0;
+    //while(dev->busy) {
+    //    i++;
+    //    xtimer_usleep(0);
+    //}
+    //DEBUG("START busy loops: %d\n", i);
+    
     dev->busy=1;
+    
+    {
+		struct timespec w = {1,0};
+		i = sem_timedwait (&(dev->s_send), &w); 
+		DEBUG("END SEM WAIT: %d\n", i);
+		if (i == -1) {
+			
+		} else {
+			
+		}
+	}	
 
     ata8510_tx_prepare(dev);
 
@@ -346,12 +363,22 @@ gpio_clear(DEBUG_PIN);
     ata8510_set_state(dev, ATA8510_STATE_TX_ON);
 
     // wait until trasmission ends
-    i=0;
-    while(dev->busy) {
-        i++;
-        xtimer_usleep(0);
-    }
-    DEBUG("END busy loops: %d\n", i);
+    //i=0;
+    //while(dev->busy) {
+    //    i++;
+    //    xtimer_usleep(0);
+    //}
+    //DEBUG("END busy loops: %d\n", i);
+    {
+		struct timespec w = {1,0};
+		i = sem_timedwait (&(dev->s_send), &w); 
+		DEBUG("END SEM WAIT: %d\n", i);
+		if (i == -1) {
+			
+		} else {
+			
+		}
+	} 	
 
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.tx_bytes += len;

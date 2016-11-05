@@ -137,10 +137,12 @@ void ata8510_reset(ata8510_t *dev)
 //    /* go into RX state */
 //    ata8510_set_state(dev, ATA8510_STATE_RX_AACK_ON);
 
-    dev->service = 2;
+    dev->service = 2;  // 8510_868_24305_NoStartAfterFill_40k_service_1_ch_0.hex
     dev->channel = 0;
     dev->idle_state = ATA8510_STATE_POLLING;
     dev->pending_tx = 0;
+
+    sem_post (&(dev->s_send));
 
     ata8510_write_sram_register(dev, 0x294, 0x2b);  // set RSSI polling to 11 (27.1ms)
     ata8510_set_state(dev, ATA8510_STATE_POLLING);

@@ -33,6 +33,8 @@
 #include "net/netdev2.h"
 #include "net/netdev2/ieee802154.h"
 #include "net/gnrc/nettype.h"
+#include "sema.h"
+#include "semaphore.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,6 +98,7 @@ typedef struct {
     int sys_errors; 
     int unknown_case;
     int blocked;
+    sem_t s_send;
 
     /** @} */
 } ata8510_t;
