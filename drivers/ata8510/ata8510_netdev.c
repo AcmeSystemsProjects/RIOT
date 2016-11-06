@@ -174,6 +174,7 @@ static void _irq_handler(void *arg)
 #if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
                     DEBUG("_isr#%d: send batch %d bytes\n", dev->interrupts, n);
 #endif
+                    printf("_isr#%d: send batch %d bytes\n", dev->interrupts, n);
                     ata8510_WriteTxFifo(dev, n, data);
                 }
             }
@@ -216,7 +217,9 @@ static void _irq_handler(void *arg)
                 for(int i=0;i<4;i++){ dev->status[i]=status[i]; }
                 netdev->event_callback(netdev, NETDEV2_EVENT_ISR);
 
-				// sem_post (&(dev->s_send));
+				if (sem_post (&(dev->s_send)))
+					perror ("_irq_handler: sem_post: SEMAPHORE ERROR");
+
                 break;
 
 		    case ATA8510_STATE_POLLING:
@@ -268,8 +271,8 @@ static int _init(netdev2_t *netdev)
     }
     ringbuffer_init(&dev->rb, (char *)dev->mem, sizeof(dev->mem));
     
-    //int xs = sem_init (&(dev->s_send), 0, 0);
-    //printf ("SEMAPHORE: %d\n", xs);
+    if (sem_init (&(dev->s_send), 1 /*shared*/, 1 /* init to unlocked */)) 
+		perror ("_init: SEMAPHORE ERROR");
 
     DEBUG("[ata8510] init done\n");
 
@@ -317,7 +320,7 @@ gpio_clear(DEBUG_PIN);
 
     dev->pending_tx++;
     
-    if (1) {
+    if (0) {
 		/* make sure ongoing radio activity is finished */
 		i=0;
 		while(dev->busy) {
@@ -326,11 +329,10 @@ gpio_clear(DEBUG_PIN);
 		}
 		DEBUG("START busy loops: %d\n", i);
 	} else {
-		struct timespec w = {1,0};
-		i = sem_timedwait (&(dev->s_send), &w); 
+		i = sem_wait (&(dev->s_send)); 
 		DEBUG("END SEM WAIT: %d\n", i);
 		if (i == -1) {
-			
+			perror ("_send tx semaphore failed wait #1");
 		} else {
 			
 		}
@@ -363,7 +365,8 @@ gpio_clear(DEBUG_PIN);
     // activate tx mode 
     ata8510_set_state(dev, ATA8510_STATE_TX_ON);
 
-	if (1) {
+#if 0
+	{
 		// wait until trasmission ends
 		i=0;
 		while(dev->busy) {
@@ -371,16 +374,8 @@ gpio_clear(DEBUG_PIN);
 			xtimer_usleep(0);
 		}
 		DEBUG("END busy loops: %d\n", i);
-    } else {
-		struct timespec w = {1,0};
-		i = sem_timedwait (&(dev->s_send), &w); 
-		DEBUG("END SEM WAIT: %d\n", i);
-		if (i == -1) {
-			
-		} else {
-			
-		}
-	} 	
+    }
+#endif
 
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.tx_bytes += len;
