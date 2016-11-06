@@ -216,7 +216,7 @@ static void _irq_handler(void *arg)
                 for(int i=0;i<4;i++){ dev->status[i]=status[i]; }
                 netdev->event_callback(netdev, NETDEV2_EVENT_ISR);
 
-				sem_post (&(dev->s_send));
+				// sem_post (&(dev->s_send));
                 break;
 
 		    case ATA8510_STATE_POLLING:
@@ -268,7 +268,8 @@ static int _init(netdev2_t *netdev)
     }
     ringbuffer_init(&dev->rb, (char *)dev->mem, sizeof(dev->mem));
     
-    sem_init (&(dev->s_send), 0, 0);
+    //int xs = sem_init (&(dev->s_send), 0, 0);
+    //printf ("SEMAPHORE: %d\n", xs);
 
     DEBUG("[ata8510] init done\n");
 
@@ -315,17 +316,16 @@ gpio_clear(DEBUG_PIN);
 #endif
 
     dev->pending_tx++;
-    /* make sure ongoing radio activity is finished */
-    //i=0;
-    //while(dev->busy) {
-    //    i++;
-    //    xtimer_usleep(0);
-    //}
-    //DEBUG("START busy loops: %d\n", i);
     
-    dev->busy=1;
-    
-    {
+    if (1) {
+		/* make sure ongoing radio activity is finished */
+		i=0;
+		while(dev->busy) {
+			i++;
+			xtimer_usleep(0);
+		}
+		DEBUG("START busy loops: %d\n", i);
+	} else {
 		struct timespec w = {1,0};
 		i = sem_timedwait (&(dev->s_send), &w); 
 		DEBUG("END SEM WAIT: %d\n", i);
@@ -335,6 +335,7 @@ gpio_clear(DEBUG_PIN);
 			
 		}
 	}	
+    dev->busy=1;
 
     ata8510_tx_prepare(dev);
 
@@ -362,14 +363,15 @@ gpio_clear(DEBUG_PIN);
     // activate tx mode 
     ata8510_set_state(dev, ATA8510_STATE_TX_ON);
 
-    // wait until trasmission ends
-    //i=0;
-    //while(dev->busy) {
-    //    i++;
-    //    xtimer_usleep(0);
-    //}
-    //DEBUG("END busy loops: %d\n", i);
-    {
+	if (1) {
+		// wait until trasmission ends
+		i=0;
+		while(dev->busy) {
+			i++;
+			xtimer_usleep(0);
+		}
+		DEBUG("END busy loops: %d\n", i);
+    } else {
 		struct timespec w = {1,0};
 		i = sem_timedwait (&(dev->s_send), &w); 
 		DEBUG("END SEM WAIT: %d\n", i);
