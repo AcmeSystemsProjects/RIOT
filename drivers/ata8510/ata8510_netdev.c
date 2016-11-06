@@ -40,9 +40,9 @@
 #define DEBUG_SEND            0x10
 #define DEBUG_RECV            0x20
 
-//#define ENABLE_DEBUG      (0)
+#define ENABLE_DEBUG      (0)
 //#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
-#define ENABLE_DEBUG     (DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+//#define ENABLE_DEBUG     (DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
 
 
 #include "debug.h"
@@ -116,6 +116,12 @@ static void _irq_handler(void *arg)
                     );
                     ringbuffer_remove(&dev->rb, dev->rb.avail);
                 }
+           		int i = sem_wait (&(dev->s_send)); 
+				DEBUG("END SEM WAIT: %d\n", i);
+				if (i == -1) {
+					perror ("_send tx semaphore failed wait #1");
+				} else {
+				}
                 dev->busy = 1;
                 break;
         }
@@ -218,7 +224,7 @@ static void _irq_handler(void *arg)
                 netdev->event_callback(netdev, NETDEV2_EVENT_ISR);
 
 				if (sem_post (&(dev->s_send)))
-					perror ("_irq_handler: sem_post: SEMAPHORE ERROR");
+					perror ("_irq_handler: sem_post: EOTA TX ON: SEMAPHORE ERROR");
 
                 break;
 
@@ -231,9 +237,13 @@ static void _irq_handler(void *arg)
                     ata8510_set_state(dev, ATA8510_STATE_IDLE);
                     ata8510_set_state(dev, ATA8510_STATE_POLLING);
 
-                    dev->busy = 0;
                     for(int i=0;i<4;i++){ dev->status[i]=status[i]; }
                     netdev->event_callback(netdev, NETDEV2_EVENT_ISR);
+
+                    dev->busy = 0;
+
+					if (sem_post (&(dev->s_send)))
+						perror ("_irq_handler: sem_post: EOTA POLLING: SEMAPHORE ERROR");
                 }
                 break;
 
