@@ -27,11 +27,7 @@
 #include "debug.h"
 
 /** @brief Stack size for module thread */
-#if ENABLE_DEBUG
-#define GCOAP_STACK_SIZE (THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE_PRINTF)
-#else
-#define GCOAP_STACK_SIZE (THREAD_STACKSIZE_DEFAULT)
-#endif
+#define GCOAP_STACK_SIZE (THREAD_STACKSIZE_DEFAULT + DEBUG_EXTRA_STACKSIZE)
 
 /* Internal functions */
 static void *_event_loop(void *arg);
@@ -59,7 +55,7 @@ static gcoap_listener_t _default_listener = {
 };
 
 static gcoap_state_t _coap_state = {
-    .netreg_port = {NULL, 0, KERNEL_PID_UNDEF},
+    .netreg_port = GNRC_NETREG_ENTRY_INIT_PID(0, KERNEL_PID_UNDEF),
     .listeners   = &_default_listener,
 };
 
@@ -304,8 +300,7 @@ static void _expire_request(gcoap_request_memo_t *memo)
 static int _register_port(gnrc_netreg_entry_t *netreg_port, uint16_t port)
 {
     if (!gnrc_netreg_lookup(GNRC_NETTYPE_UDP, port)) {
-        netreg_port->demux_ctx  = port;
-        netreg_port->target.pid = _pid;
+        gnrc_netreg_entry_init_pid(netreg_port, port, _pid);
         gnrc_netreg_register(GNRC_NETTYPE_UDP, netreg_port);
         DEBUG("coap: registered UDP port %" PRIu32 "\n",
                netreg_port->demux_ctx);
@@ -551,7 +546,7 @@ size_t gcoap_req_send(uint8_t *buf, size_t len, ipv6_addr_t *addr, uint16_t port
         memo->resp_handler = resp_handler;
 
         size_t res = _send_buf(buf, len, addr, port);
-        if (res && GCOAP_NON_TIMEOUT) {
+        if (res && (GCOAP_NON_TIMEOUT > 0)) {
             /* start response wait timer */
             memo->timeout_msg.type        = GCOAP_NETAPI_MSG_TYPE_TIMEOUT;
             memo->timeout_msg.content.ptr = (char *)memo;
