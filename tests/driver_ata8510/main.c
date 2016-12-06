@@ -159,7 +159,7 @@ void *thread_tx_rand(void *arg)     // Still has a problem on the very first mes
     char msg2[16];
     uint32_t time_between_tx;
     uint8_t checksum;
-    uint32_t last_wakeup = xtimer_now();
+    xtimer_ticks32_t last_wakeup = xtimer_now();
     uint8_t myturn;
     uint8_t i, n;
     struct iovec vector[1];
@@ -342,11 +342,11 @@ void *thread_check_rx_errors(void *arg)
     int overflows_time = 0;
     int time_printed = -1;
     int tot_errors = 0;
-    uint32_t start_time;
+    xtimer_ticks32_t start_time;
     ata8510_t *dev = &devs[0]; // acquires the 8510 device handle
 
     printf("thread check rx errors started, pid: %" PRIkernel_pid "\n", thread_getpid());
-    uint32_t last_wakeup = xtimer_now();
+    xtimer_ticks32_t last_wakeup = xtimer_now();
 
     start_time = xtimer_now();
     time_elapsed_saved = 0;
@@ -355,7 +355,7 @@ void *thread_check_rx_errors(void *arg)
         xtimer_periodic_wakeup(&last_wakeup, INTERVALCHECKRX);
 
         // print statistics
-        time_elapsed = (xtimer_now() - start_time) / 1000000;
+        time_elapsed = ((xtimer_now()).ticks32 - start_time.ticks32) / 1000000;
         if (time_elapsed % 10 == 0 && time_elapsed != time_printed) { // every 10 seconds prints statistics
             time_printed = time_elapsed;
             // there is here still an error on the calc of overflows since the printf at the end is wrong...

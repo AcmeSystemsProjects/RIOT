@@ -29,9 +29,7 @@
 #include <unistd.h>
 
 #ifdef __MACH__
-#define _POSIX_C_SOURCE
 #include <net/if.h>
-#undef _POSIX_C_SOURCE
 #include <sys/types.h>
 #include <ifaddrs.h>
 #include <net/if_dl.h>
@@ -217,6 +215,8 @@ static int _recv(netdev2_t *netdev2, void *buf, size_t len, void *info)
     (void)info;
 
     if (!buf) {
+        int waiting_bytes;
+
         if (len > 0) {
             /* no memory available in pktbuf, discarding the frame */
             DEBUG("netdev2_tap: discarding the frame\n");
@@ -236,9 +236,9 @@ static int _recv(netdev2_t *netdev2, void *buf, size_t len, void *info)
             _continue_reading(dev);
         }
 
-        /* no way of figuring out packet size without racey buffering,
-         * so we return the maximum possible size */
-        return ETHERNET_FRAME_LEN;
+        /* get number of waiting bytes at dev->tap_fd */
+        real_ioctl(dev->tap_fd, FIONREAD, &waiting_bytes);
+        return waiting_bytes;
     }
 
     int nread = real_read(dev->tap_fd, buf, len);
