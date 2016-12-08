@@ -34,7 +34,7 @@
  * @brief   Define stack parameters for the MAC layer thread
  * @{
  */
-#define ATA8510_MAC_STACKSIZE     (THREAD_STACKSIZE_DEFAULT)
+#define ATA8510_MAC_STACKSIZE     (1600)
 #define ATA8510_MAC_PRIO          (THREAD_PRIORITY_MAIN - 4)
 
 #define ATA8510_NUM (sizeof(ata8510_params) / sizeof(ata8510_params[0]))

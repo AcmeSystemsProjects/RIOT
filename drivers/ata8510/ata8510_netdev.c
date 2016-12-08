@@ -40,9 +40,60 @@
 #define DEBUG_SEND            0x10
 #define DEBUG_RECV            0x20
 
-//#define ENABLE_DEBUG      (0)
-#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+#define ENABLE_DEBUG      (0)
+//#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+//#define ENABLE_DEBUG     (DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
 #include "debug.h"
+
+/**
+ * backoff algorithm, from csma_sender.c
+ *
+ */
+#include "net/csma_sender.h"
+
+
+#define ATA_CSMA_SENDER_BACKOFF_PERIOD_UNIT  (8200U)
+
+static csma_sender_conf_t conf_data = {
+    .min_be = 3,			/**< minimum backoff exponent */
+    .max_be = 6,			/**< maximum backoff exponent */
+    .max_backoffs = 10,		/**< maximum number of retries */
+    .backoff_period = ATA_CSMA_SENDER_BACKOFF_PERIOD_UNIT /**< backoff period in microseconds */
+};
+csma_sender_conf_t *conf = &conf_data;
+
+#include "random.h"
+
+/**
+ * @brief choose an adequate random backoff period in microseconds,
+ *        from the given Backoff Exponent
+ *
+ * @param[in] be        Backoff Exponent for the computation of period
+ *
+ * @return              An adequate random backoff exponent in microseconds
+ */
+static inline uint32_t choose_backoff_period(int be,
+                                             const csma_sender_conf_t *conf)
+{
+    if (be < conf->min_be) {
+        be = conf->min_be;
+    }
+    if (be > conf->max_be) {
+        be = conf->max_be;
+    }
+    uint32_t max_backoff = ((1 << be) - 1) * ATA_CSMA_SENDER_BACKOFF_PERIOD_UNIT;
+	uint32_t rv = random_uint32();
+    uint32_t period = rv % max_backoff;
+
+    //printf ("*********** choose_backoff_period: max_backoff: %lu period: %lu random: %lu\n", max_backoff, period, rv);
+
+    if (period < ATA_CSMA_SENDER_BACKOFF_PERIOD_UNIT) {
+        period = ATA_CSMA_SENDER_BACKOFF_PERIOD_UNIT;
+    }
+
+    return period;
+}
+
 
 #ifdef ENABLE_DEBUG
 #include "ringbuffer.h"
@@ -141,10 +192,12 @@ static void _irq_handler(void *arg)
             case ATA8510_STATE_POLLING:
                 // flush RX ringbuffer
                 if (!ringbuffer_empty(&dev->rb)) {
+#if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
                     DEBUG_LATER(
                         "_isr#%d: RX start, discarding %d stale bytes from buffer\n",
                         dev->interrupts, dev->rb.avail
                     );
+#endif
                     ringbuffer_remove(&dev->rb, dev->rb.avail);
                 }
                 dev->busy = 1;
@@ -239,7 +292,9 @@ static void _irq_handler(void *arg)
                             ata8510_set_state(dev, ATA8510_STATE_POLLING);
                             break;
                         default:
+#if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
                              DEBUG_LATER("_isr#%d: Cannot handle state %d after TX\n", dev->interrupts, mynextstate8510);
+#endif
                              break;
                     }
                 }
@@ -397,6 +452,36 @@ gpio_clear(DEBUG_PIN);
         xtimer_usleep(0);
     }
     DEBUG("START busy loops: %d\n", i);
+
+    /* if we arrive here, local radio is believed in idle state
+     * then we must perform the CSMA/CA procedure in order to avoid
+     * that multiple node in the same broadcast domain, starting to
+     * transmit simultaneously as reaction to some broadcat packet,
+     * elide each other causing an endless loop of retransmissions
+     */
+    random_init(_xtimer_now());
+    DEBUG("_send: Starting software CSMA/CA....\n");
+
+    int nb = 0, be = conf->min_be;
+
+    while (nb <= conf->max_be) {
+        /* delay for an adequate random backoff period */
+        uint32_t bp = choose_backoff_period(be, conf);
+        DEBUG("_send: backoff: %d period: %d\n", nb, (int)bp);
+        xtimer_usleep(bp);
+
+        // check again for local radio being idle
+        if (dev->busy == 0) break;
+
+        /* radio is still busy: increment CSMA counters */
+        DEBUG("_send: Radio medium busy.\n");
+        be++;
+        if (be > conf->max_be) {
+            be = conf->max_be;
+        }
+        nb++;
+        /* ... and try again if we have no exceeded the retry limit */
+    }
     dev->busy=1;
 
     ata8510_tx_prepare(dev);
@@ -436,7 +521,7 @@ gpio_clear(DEBUG_PIN);
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.tx_bytes += len;
 #endif
-
+	DEBUG_NOW();
     /* return the number of bytes that were sent */
     return (int)len;
 }
@@ -495,7 +580,7 @@ static int _recv(netdev2_t *netdev, void *buf, size_t len, void *info)
             DEBUG("_recv: no RSSI values read\n");
         }
     }
-printf("_recv: %d\n", pkt_len);
+//printf("_recv: %d\n", pkt_len);
     return pkt_len;
 }
 
@@ -844,51 +929,6 @@ static void _isr(netdev2_t *netdev)
 
     DEBUG_NOW();
 }
-
-
-
-
-#if 0
-
-
-NETOPT_CHANNEL,             
-NETOPT_IS_CHANNEL_CLR,      
-NETOPT_ADDRESS,             
-NETOPT_ADDRESS_LONG,
-NETOPT_ADDR_LEN,            
-NETOPT_SRC_LEN,             
-NETOPT_NID,
-NETOPT_IPV6_IID,
-NETOPT_TX_POWER,            
-NETOPT_MAX_PACKET_SIZE,     
-NETOPT_PRELOADING,
-NETOPT_PROMISCUOUSMODE,     
-NETOPT_AUTOACK,             
-NETOPT_ACK_REQ,             
-NETOPT_RETRANS,             
-NETOPT_PROTO,               
-NETOPT_STATE,               
-NETOPT_RAWMODE,             
-NETOPT_RX_START_IRQ,
-NETOPT_RX_END_IRQ,
-NETOPT_TX_START_IRQ,
-NETOPT_TX_END_IRQ,
-NETOPT_AUTOCCA,
-NETOPT_CSMA,
-NETOPT_CSMA_RETRIES,            
-NETOPT_IS_WIRED,
-NETOPT_DEVICE_TYPE,
-NETOPT_CHANNEL_PAGE,
-NETOPT_CCA_THRESHOLD,
-NETOPT_CCA_MODE,
-NETOPT_STATS,
-NETOPT_ENCRYPTION,        
-NETOPT_ENCRYPTION_KEY,    
-NETOPT_RF_TESTMODE,
-NETOPT_NUMOF,
-
-#endif
-
 
 
 
