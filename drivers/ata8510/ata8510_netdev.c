@@ -40,9 +40,9 @@
 #define DEBUG_SEND            0x10
 #define DEBUG_RECV            0x20
 
-#define ENABLE_DEBUG      (0)
+//#define ENABLE_DEBUG      (0)
 //#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
-//#define ENABLE_DEBUG     (DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
+#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX)
 #include "debug.h"
 
 /**
@@ -324,6 +324,17 @@ static void _irq_handler(void *arg)
 		        break;
         }
     }
+
+    if (status[ATA8510_EVENTS] & ATA8510_EVENTS_WCOKA) {
+		#if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
+				DEBUG_LATER("_isr#%d: WCOKA, state=%d\n", dev->interrupts, mystate8510);
+		#endif
+	    switch (mystate8510) {
+			case ATA8510_STATE_POLLING:
+				dev->busy = 1;
+			break;
+		}
+	}
 
 #if ENABLE_DEBUG & DEBUG_ISR
     DEBUG_LATER("_isr#%d: state=%d pending_tx=%d busy=%d\n", dev->interrupts, mystate8510, dev->pending_tx, dev->busy);
