@@ -183,6 +183,22 @@ static void _irq_handler(void *arg)
         }
 	}
 
+    // WCOK: preamble sensed
+    if (status[ATA8510_EVENTS] & ATA8510_EVENTS_WCOKA) {
+		#if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
+				DEBUG_LATER("_isr#%d: WCOKA, state=%d\n", dev->interrupts, mystate8510);
+		#endif
+	    switch (mystate8510) {
+			case ATA8510_STATE_POLLING:
+				dev->busy = 1;
+			break;
+			
+		    default:
+				dev->unknown_case++;
+		        break;
+		}
+	}
+
     // SOTA event
 	if (status[ATA8510_EVENTS] & ATA8510_EVENTS_SOTA) {
 #if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
@@ -298,10 +314,9 @@ static void _irq_handler(void *arg)
                              break;
                     }
                 }
-                dev->busy = 0;
                 for(int i=0;i<4;i++){ dev->status[i]=status[i]; }
                 netdev->event_callback(netdev, NETDEV2_EVENT_ISR);
-
+                dev->busy = 0;
                 break;
 
 		    case ATA8510_STATE_POLLING:
@@ -313,9 +328,9 @@ static void _irq_handler(void *arg)
                     ata8510_set_state(dev, ATA8510_STATE_IDLE);
                     ata8510_set_state(dev, ATA8510_STATE_POLLING);
 
-                    dev->busy = 0;
                     for(int i=0;i<4;i++){ dev->status[i]=status[i]; }
                     netdev->event_callback(netdev, NETDEV2_EVENT_ISR);
+                    dev->busy = 0;
                 }
                 break;
 
@@ -324,17 +339,6 @@ static void _irq_handler(void *arg)
 		        break;
         }
     }
-
-    if (status[ATA8510_EVENTS] & ATA8510_EVENTS_WCOKA) {
-		#if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
-				DEBUG_LATER("_isr#%d: WCOKA, state=%d\n", dev->interrupts, mystate8510);
-		#endif
-	    switch (mystate8510) {
-			case ATA8510_STATE_POLLING:
-				dev->busy = 1;
-			break;
-		}
-	}
 
 #if ENABLE_DEBUG & DEBUG_ISR
     DEBUG_LATER("_isr#%d: state=%d pending_tx=%d busy=%d\n", dev->interrupts, mystate8510, dev->pending_tx, dev->busy);
