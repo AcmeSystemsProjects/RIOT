@@ -137,7 +137,7 @@ void ata8510_reset(ata8510_t *dev)
 //    /* go into RX state */
 //    ata8510_set_state(dev, ATA8510_STATE_RX_AACK_ON);
 
-    dev->service = 1;
+    dev->service = 2;
     dev->channel = 0;
     dev->idle_state = ATA8510_STATE_POLLING;
     dev->pending_tx = 0;

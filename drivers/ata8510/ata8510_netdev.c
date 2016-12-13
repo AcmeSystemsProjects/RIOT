@@ -42,7 +42,7 @@
 
 //#define ENABLE_DEBUG      (0)
 //#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
-#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX)
+#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_RECV)
 #include "debug.h"
 
 /**
@@ -185,9 +185,9 @@ static void _irq_handler(void *arg)
 
     // WCOK: preamble sensed
     if (status[ATA8510_EVENTS] & ATA8510_EVENTS_WCOKA) {
-		#if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
-				DEBUG_LATER("_isr#%d: WCOKA, state=%d\n", dev->interrupts, mystate8510);
-		#endif
+		//#if ENABLE_DEBUG && DEBUG_ISR_EVENTS_TRX
+				DEBUG_LATER("\n**************************************_isr#%d: WCOKA, state=%d\n", dev->interrupts, mystate8510);
+		//#endif
 	    switch (mystate8510) {
 			case ATA8510_STATE_POLLING:
 				dev->busy = 1;
@@ -351,18 +351,19 @@ static void _irq_handler(void *arg)
     DEBUG_LATER(
         "_isr#%d: SYS_ERR=%d CMD_RDY=%d SYS_RDY=%d SFIFO=%d DFIFO_RX=%d DFIFO_TX=%d\n",
         dev->interrupts,
-        (dev->status[ATA8510_SYSTEM] & ATA8510_SYSTEM_SYS_ERR  ? 1 : 0),
-        (dev->status[ATA8510_SYSTEM] & ATA8510_SYSTEM_CMD_RDY  ? 1 : 0),
-        (dev->status[ATA8510_SYSTEM] & ATA8510_SYSTEM_SYS_RDY  ? 1 : 0),
-        (dev->status[ATA8510_SYSTEM] & ATA8510_SYSTEM_SFIFO    ? 1 : 0),
-        (dev->status[ATA8510_SYSTEM] & ATA8510_SYSTEM_DFIFO_RX ? 1 : 0),
-        (dev->status[ATA8510_SYSTEM] & ATA8510_SYSTEM_DFIFO_TX ? 1 : 0)
+        (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_SYS_ERR  ? 1 : 0),
+        (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_CMD_RDY  ? 1 : 0),
+        (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_SYS_RDY  ? 1 : 0),
+        (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_SFIFO    ? 1 : 0),
+        (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_DFIFO_RX ? 1 : 0),
+        (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_DFIFO_TX ? 1 : 0)
     );
-    DEBUG_LATER(
-        "_isr#%d: SOTA=%d EOTA=%d\n",
+    printf(
+        "_isr#%d: SOTA=%d EOTA=%d WCOKA=%d\n",
         dev->interrupts,
-        (dev->status[ATA8510_EVENTS] & ATA8510_EVENTS_SOTA ? 1 : 0),
-        (dev->status[ATA8510_EVENTS] & ATA8510_EVENTS_EOTA ? 1 : 0)
+        (status[ATA8510_EVENTS] & ATA8510_EVENTS_SOTA ? 1 : 0),
+        (status[ATA8510_EVENTS] & ATA8510_EVENTS_EOTA ? 1 : 0),
+        (status[ATA8510_EVENTS] & ATA8510_EVENTS_WCOKA ? 1 : 0)
     );
 #endif
 
@@ -568,16 +569,16 @@ static int _recv(netdev2_t *netdev, void *buf, size_t len, void *info)
     /* copy payload */
     ringbuffer_get(&dev->rb, (char *)buf, pkt_len);
 
-#if ENABLE_DEBUG & (DEBUG_RECV | DEBUG_PKT_DUMP)
-    DEBUG(
+#if ENABLE_DEBUG && (DEBUG_RECV | DEBUG_PKT_DUMP)
+    DEBUG_LATER(
         "_recv: service=%d, channel=%d, pkt_len=%d, data=[", 
         dev->service, dev->channel, pkt_len
     );
     for (i=0; i<pkt_len; i++) {
         if ((i%16) == 0) DEBUG("\n\t");
-        DEBUG(" %02x", ((char *)buf)[i]);
+        DEBUG_LATER(" %02x", ((char *)buf)[i]);
     }
-    DEBUG("\n]\n");
+    DEBUG_LATER("\n]\n");
 #endif
 
     if (info != NULL) {
@@ -588,11 +589,11 @@ static int _recv(netdev2_t *netdev, void *buf, size_t len, void *info)
         if (dev->RSSI_len > 0) {
             for (i=0; i<dev->RSSI_len; i++) { rssicalc+=dev->RSSI[i]; }
             radio_info->rssi = rssicalc/dev->RSSI_len;
-#if ENABLE_DEBUG & DEBUG_RECV
-            DEBUG("_recv: RSSI values = %d RSSI = %d \n", dev->RSSI_len, radio_info->rssi);
+#if ENABLE_DEBUG && DEBUG_RECV
+            DEBUG_LATER("_recv: RSSI values = %d RSSI = %d \n", dev->RSSI_len, radio_info->rssi);
 #endif
         } else {
-            DEBUG("_recv: no RSSI values read\n");
+            DEBUG_LATER("_recv: no RSSI values read\n");
         }
     }
 //printf("_recv: %d\n", pkt_len);
