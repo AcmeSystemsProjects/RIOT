@@ -35,13 +35,14 @@ USEMODULE += gnrc_sixlowpan_border_router_default
 USEMODULE += fib
 # Additional networking modules that can be dropped if not needed
 USEMODULE += gnrc_icmpv6_echo
+USEMODULE += gnrc_rpl
 # Add also the shell, some shell commands
 USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
 
 # include UHCP client
-USEMODULE += gnrc_uhcpc
+#USEMODULE += gnrc_uhcpc
 
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
