@@ -1,0 +1,223 @@
+
+
+
+
+#
+# border router static configuration
+#
+ifconfig 5 add 2001:db8::ff:fe00:f26/64
+ifconfig 6 add unicast fe80::2/64
+fibroute add :: via fe80::1 dev 6
+rpl init 5
+rpl root 1 2001:db8::ff:fe00:f26
+
+#
+# Linux routing table before the script is run
+#
+# sudo sh ~/RIOT/dist/tools/ethos/start_network.sh /dev/ttyUSB1 tap0 2001:db8::/64
+#
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+fe80::/64                      ::                         U    256 0     0 wlan0
+::/0                           ::                         !n   -1  1  3174 lo
+::1/128                        ::                         Un   0   4    68 lo
+fe80::5ec5:d4ff:fe6b:6674/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 3    15 wlan0
+::/0                           ::                         !n   -1  1  3174 lo
+
+
+#
+# this is the routing table generated after uhcp client is run
+#
+----------------------------------------------------------------------------------
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2001:db8::/64                  fe80::2                    UG   1024 0     0 tap0
+fd00:dead:beef::1/128          ::                         !n   256 0     0 lo
+fe80::/64                      ::                         U    256 0     0 wlan0
+fe80::/64                      ::                         U    256 1     1 tap0
+::/0                           ::                         !n   -1  1  3175 lo
+::1/128                        ::                         Un   0   4    68 lo
+fd00:dead:beef::1/128          ::                         Un   0   1     0 lo
+fe80::/128                     ::                         Un   0   1     0 lo
+fe80::1/128                    ::                         Un   0   1     0 lo
+fe80::5ec5:d4ff:fe6b:6674/128  ::                         Un   0   1     0 lo
+fe80::c4e0:d3ff:fe8b:5746/128  ::                         Un   0   3     2 lo
+ff00::/8                       ::                         U    256 3    16 wlan0
+ff00::/8                       ::                         U    256 3    20 tap0
+::/0                           ::                         !n   -1  1  3175 lo
+
+#
+# ... but no uchpd client is available due to memory constraints
+# in any case no differences here
+#
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+2001:db8::/64                  fe80::2                    UG   1024 1    16 tap0
+fd00:dead:beef::1/128          ::                         !n   256 0     0 lo
+fe80::/64                      ::                         U    256 0     0 wlan0
+fe80::/64                      ::                         U    256 0     0 tap0
+::/0                           ::                         !n   -1  1  3156 lo
+::1/128                        ::                         Un   0   4    68 lo
+fd00:dead:beef::1/128          ::                         Un   0   2    45 lo
+fe80::/128                     ::                         Un   0   1     0 lo
+fe80::1/128                    ::                         Un   0   1     0 lo
+fe80::5ec5:d4ff:fe6b:6674/128  ::                         Un   0   1     0 lo
+fe80::706b:47ff:fe8b:adf4/128  ::                         Un   0   1     0 lo
+ff00::/8                       ::                         U    256 2    21 wlan0
+ff00::/8                       ::                         U    256 4    71 tap0
+::/0                           ::                         !n   -1  1  3156 lo
+
+
+#
+# neighbour cache fully populated as the other two nodes are in the 
+# same broadcast domain 
+#
+ncache
+IPv6 address                    if  L2 address                state       type
+------------------------------------------------------------------------------
+fe80::e846:3dff:fe35:2faf        7  ea:46:3d:35:2f:af         DELAY       -
+fe80::ff:fe00:547a               6  54:7a                     DELAY       REG
+fe80::ff:fe00:9a6                6  09:a6                     DELAY       REG
+
+#
+# neighbour cache NOT fully populated as one router is out of range
+# of border router (no antenna)
+#
+ncache
+IPv6 address                    if  L2 address                state       type
+------------------------------------------------------------------------------
+fe80::ff:fe00:9a6                5  09:a6                     REACHABLE   REG
+fe80::1                          6  42:09:0b:da:62:f2         REACHABLE   -
+
+
+#
+# interface status after the statically assigned addresses have been configured
+#
+> ifconfig
+ifconfig
+Iface  5   HWaddr: 0f:26  Channel: 0  NID: 0x0
+           Long HWaddr: ae:58:41:55:47:35:8f:26 
+           State: RX 
+           MTU:1280  HL:64  6LO  RTR  RTR_ADV  IPHC  
+           Source address length: 2
+           Link type: wireless
+           inet6 addr: ff02::1/128  scope: local [multicast]
+           inet6 addr: fe80::ff:fe00:f26/64  scope: local
+           inet6 addr: ff02::1:ff00:f26/128  scope: local [multicast]
+           inet6 addr: 2001:db8::ff:fe00:f26/64  scope: global
+           inet6 addr: ff02::2/128  scope: local [multicast]
+           inet6 addr: ff02::1a/128  scope: local [multicast]
+           
+Iface  6   HWaddr: 00:21:d3:60:5a:8d 
+           
+           MTU:1500  HL:64  RTR  RTR_ADV  
+           Source address length: 6
+           Link type: wired
+           inet6 addr: ff02::1/128  scope: local [multicast]
+           inet6 addr: fe80::221:d3ff:fe60:5a8d/64  scope: local
+           inet6 addr: ff02::1:ff60:5a8d/128  scope: local [multicast]
+           inet6 addr: ff02::2/128  scope: local [multicast]
+           inet6 addr: fe80::2/64  scope: local
+           inet6 addr: ff02::1:ff00:2/128  scope: local [multicast]
+           
+
+
+
+#
+# routing table after the static default route has been added BUT 
+# before RPL is started
+# 
+fibroute
+Destination                             Flags             Next Hop                                Flags      Expires          Interface
+::                                      0x00000000 H      fe80::1                                 0x00000000 NEVER            7
+ 
+# RPL started
+# routing table when all nodes are in the same broadcast domain
+# each router is reachable using, as next-hop. its local address
+# the L2 address is found in ncache
+#
+fibroute
+Destination                             Flags             Next Hop                                Flags      Expires          Interface
+::                                      0x00000000 H      fe80::1                                 0x00000000 NEVER            6
+2001:db8::ff:fe00:547a                  0x80000000 N /128 fe80::ff:fe00:547a                      0x00000001 253.441485
+2001:db8::ff:fe00:9a6                   0x80000000 N /128 fe80::ff:fe00:9a6                       0x00000001 273.3409205
+
+#
+# Router 2001:db8::ff:fe00:547a went out of range
+# so it is reachable via the other one
+#
+fibroute
+Destination                             Flags             Next Hop                                Flags      Expires          Interface
+::                                      0x00000000 H      fe80::ff:fe00:9a6                       0x00000001 226.8319905
+2001:db8::ff:fe00:9a6                   0x80000000 N /128 fe80::ff:fe00:9a6                       0x00000001 52.6303245
+2001:db8::ff:fe00:547a                  0x80000000 N /128 fe80::ff:fe00:9a6                       0x00000001 52.6304915
+
+
+#
+# routing table in border router when all the nodes are in the same
+# broadcast domain
+#
+fibroute
+Destination                             Flags             Next Hop                                Flags      Expires          Interface
+::                                      0x00000000 H      fe80::1                                 0x00000000 NEVER            6
+2001:db8::ff:fe00:547a                  0x80000000 N /128 fe80::ff:fe00:547a                      0x00000001 290.9946055
+2001:db8::ff:fe00:9a6                   0x80000000 N /128 fe80::ff:fe00:9a6                       0x00000001 295.7219245
+
+fibroute
+Destination                             Flags             Next Hop                                Flags      Expires          Interface
+::                                      0x00000000 H      fe80::1                                 0x00000000 NEVER            6
+2001:db8::ff:fe00:547a                  0x80000000 N /128 fe80::ff:fe00:9a6                       0x00000001 190.5049185
+2001:db8::ff:fe00:9a6                   0x80000000 N /128 fe80::ff:fe00:9a6                       0x00000001 250.8900825
+
+
+#
+# RPL status in border router
+# no parent table as this is the root 
+#
+> rpl
+rpl
+instance table:	[X]	
+parent table:	[ ]	[ ]	[ ]	
+
+instance [1 | Iface: 5 | mop: 2 | ocp: 0 | mhri: 256 | mri 0]
+	dodag [2001:db8::ff:fe00:f26 | R: 256 | OP: Router | PIO: on | CL: 0s | TR(I=[8,20], k=10, c=1, TC=127s, TI=144s)]
+	
+	
+
+> fibroute
+fibroute
+Destination                             Flags             Next Hop                                Flags      Expires          Interface
+::                                      0x00000000 H      fe80::1                                 0x00000000 NEVER            6
+2001:db8::ff:fe00:547a                  0x80000000 N /128 fe80::ff:fe00:9a6                       0x00000001 189.8576815
+
+
+
+
+#
+# interface configuration on border router when used without RPL
+# but with uhcp client
+#
+2016-12-15 00:20:17,095 - INFO # > ifconfig
+2016-12-15 00:20:17,100 - INFO # Iface  7   HWaddr: 09:a6  Channel: 0  NID: 0x0
+2016-12-15 00:20:17,105 - INFO #            Long HWaddr: ae:58:7d:5f:00:db:09:a6 
+2016-12-15 00:20:17,108 - INFO #            State: RX 
+2016-12-15 00:20:17,115 - INFO #            MTU:1280  HL:64  6LO  RTR  RTR_ADV  IPHC  
+2016-12-15 00:20:17,118 - INFO #            Source address length: 2
+2016-12-15 00:20:17,122 - INFO #            Link type: wireless
+2016-12-15 00:20:17,127 - INFO #            inet6 addr: ff02::1/128  scope: local [multicast]
+2016-12-15 00:20:17,132 - INFO #            inet6 addr: fe80::ff:fe00:9a6/64  scope: local
+2016-12-15 00:20:17,139 - INFO #            inet6 addr: ff02::1:ff00:9a6/128  scope: local [multicast]
+2016-12-15 00:20:17,144 - INFO #            inet6 addr: ff02::1a/128  scope: local [multicast]
+2016-12-15 00:20:17,150 - INFO #            inet6 addr: 2001:db8::ff:fe00:9a6/64  scope: global
+2016-12-15 00:20:17,156 - INFO #            inet6 addr: ff02::2/128  scope: local [multicast]
+2016-12-15 00:20:17,157 - INFO #            
+2016-12-15 00:20:17,160 - INFO #            Statistics for Layer 2
+2016-12-15 00:20:17,164 - INFO #             RX packets 43  bytes 2781
+2016-12-15 00:20:17,169 - INFO #             TX packets 28 (Multicast: 18)  bytes 1700
+2016-12-15 00:20:17,172 - INFO #             TX succeeded 0 errors 0
+2016-12-15 00:20:17,175 - INFO #            Statistics for IPv6
+2016-12-15 00:20:17,178 - INFO #             RX packets 43  bytes 3944
+2016-12-15 00:20:17,184 - INFO #             TX packets 28 (Multicast: 18)  bytes 2436
+2016-12-15 00:20:17,187 - INFO #             TX succeeded 28 errors 0
+2016-12-15 00:20:17,187 - INFO # 

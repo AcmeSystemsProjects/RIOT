@@ -40,9 +40,9 @@
 #define DEBUG_SEND            0x10
 #define DEBUG_RECV            0x20
 
-//#define ENABLE_DEBUG      (0)
+#define ENABLE_DEBUG      (0)
 //#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_SEND | DEBUG_RECV | DEBUG_PKT_DUMP)
-#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_RECV)
+//#define ENABLE_DEBUG     (DEBUG_ISR | DEBUG_ISR_EVENTS | DEBUG_ISR_EVENTS_TRX | DEBUG_RECV)
 #include "debug.h"
 
 /**
@@ -185,9 +185,9 @@ static void _irq_handler(void *arg)
 
     // WCOK: preamble sensed
     if (status[ATA8510_EVENTS] & ATA8510_EVENTS_WCOKA) {
-		//#if ENABLE_DEBUG && DEBUG_ISR_EVENTS_TRX
+		#if ENABLE_DEBUG && DEBUG_ISR_EVENTS_TRX
 				DEBUG_LATER("\n**************************************_isr#%d: WCOKA, state=%d\n", dev->interrupts, mystate8510);
-		//#endif
+		#endif
 	    switch (mystate8510) {
 			case ATA8510_STATE_POLLING:
 				dev->busy = 1;
@@ -209,7 +209,7 @@ static void _irq_handler(void *arg)
                 // flush RX ringbuffer
                 if (!ringbuffer_empty(&dev->rb)) {
 #if ENABLE_DEBUG & DEBUG_ISR_EVENTS_TRX
-                    DEBUG_LATER(
+                    DEBUG_LATER (
                         "_isr#%d: RX start, discarding %d stale bytes from buffer\n",
                         dev->interrupts, dev->rb.avail
                     );
@@ -289,7 +289,7 @@ static void _irq_handler(void *arg)
             case ATA8510_STATE_TX_ON:
                 // flush TX ringbuffer
                 if (!ringbuffer_empty(&dev->rb)) {
-                    DEBUG_LATER(
+                    DEBUG_LATER (
                         "_isr#%d: TX end, discarding %d stale bytes from buffer\n",
                         dev->interrupts, dev->rb.avail
                     );
@@ -344,7 +344,7 @@ static void _irq_handler(void *arg)
     DEBUG_LATER("_isr#%d: state=%d pending_tx=%d busy=%d\n", dev->interrupts, mystate8510, dev->pending_tx, dev->busy);
     DEBUG_LATER(
         "_isr#%d: Get Event Bytes: %02x %02x %02x %02x\n",
-        dev->interrupts, dev->status[0], dev->status[1], dev->status[2], dev->status[3]
+        dev->interrupts, status[0], status[1], status[2], status[3]
     );
 #endif
 #if ENABLE_DEBUG & DEBUG_ISR_EVENTS
@@ -358,7 +358,7 @@ static void _irq_handler(void *arg)
         (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_DFIFO_RX ? 1 : 0),
         (status[ATA8510_SYSTEM] & ATA8510_SYSTEM_DFIFO_TX ? 1 : 0)
     );
-    printf(
+    DEBUG_LATER(
         "_isr#%d: SOTA=%d EOTA=%d WCOKA=%d\n",
         dev->interrupts,
         (status[ATA8510_EVENTS] & ATA8510_EVENTS_SOTA ? 1 : 0),
