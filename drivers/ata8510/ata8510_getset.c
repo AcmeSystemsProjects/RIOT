@@ -48,17 +48,24 @@ uint64_t ata8510_get_addr_long(ata8510_t *dev)
 {
     uint64_t addr;
     uint8_t *ap = (uint8_t *)(&addr);
+
+	printf ("GET LONG ADDR: ");
     for (int i = 0; i < 8; i++) {
         ap[i] = dev->netdev.long_addr[i];
+        printf ("%02x ", dev->netdev.long_addr[i]);
     }
+    printf ("\n");
     return addr;
 }
 
 void ata8510_set_addr_long(ata8510_t *dev, uint64_t addr)
 {
+	printf ("SET LONG ADDR: ");
     for (int i = 0; i < 8; i++) {
         dev->netdev.long_addr[i] = (uint8_t)(addr >> (i * 8));
+        printf ("%02x ", dev->netdev.long_addr[i]);
     }
+    printf ("\n");
 }
 
 void ata8510_get_version_flash(ata8510_t *dev, uint8_t *data){

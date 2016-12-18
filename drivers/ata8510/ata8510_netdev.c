@@ -581,6 +581,42 @@ static int _recv(netdev2_t *netdev, void *buf, size_t len, void *info)
     DEBUG_LATER("\n]\n");
 #endif
 
+    /*
+     * check the L2 destination address
+     *
+     */
+    {
+		le_uint16_t dst_pan;
+		uint8_t dst[8];
+
+		int l2l = ieee802154_get_dst(buf, dst, &dst_pan);
+
+        switch (l2l) {
+			case 2:
+			    //printf("2: %02x %02x\n", dst[0], dst[1]);
+				if ((dst[0] == 0xff && dst[1] == 0xff) ||
+				     (memcmp (dev->netdev.short_addr, dst, 2) == 0)) {
+				        //printf("2: OK\n");
+				    } else
+                        return -ENOBUFS;
+			break;
+
+            case 8:
+                //for (int x=0; x < 8; x++)
+                //   printf("%02x ", dst[x]);
+                //printf("\n");
+				if ((dst[0] == 0xff && dst[1] == 0xff && dst[2] == 0xff && dst[3] == 0xff && dst[4] == 0xff && dst[5] == 0xff && dst[6] == 0xff && dst[7] == 0xff) 
+				    || (memcmp (&(dev->netdev.long_addr[6]), dst+6, 2) == 0) ) {
+						//printf("8: OK\n");
+					} else
+					    return -ENOBUFS;
+			break;
+
+			default:
+			   printf ("BAD MAC 802.15.4 LEN: %d\n", l2l);
+		}
+	}
+
     if (info != NULL) {
         netdev2_ieee802154_rx_info_t *radio_info = info;
         radio_info->lqi=0;
