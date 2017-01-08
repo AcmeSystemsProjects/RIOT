@@ -433,7 +433,7 @@ static int _send(netdev2_t *netdev, const struct iovec *vector, unsigned count)
     const struct iovec *ptr = vector;
     size_t len = 0;
     uint8_t data[ATA8510_DFIFO_TX_LENGTH];
-    int i,n;
+    int n;
 
 // assert the hw debug pin
 gpio_set(DEBUG_PIN);
@@ -461,18 +461,11 @@ gpio_clear(DEBUG_PIN);
 #endif
 
     dev->pending_tx++;
-    /* make sure ongoing radio activity is finished */
-    i=0;
-    while(dev->busy) {
-        i++;
-        xtimer_usleep(0);
-    }
-    DEBUG("START busy loops: %d\n", i);
 
-    /* if we arrive here, local radio is believed in idle state
-     * then we must perform the CSMA/CA procedure in order to avoid
+    /*
+     * We must perform the CSMA/CA procedure in order to avoid
      * that multiple node in the same broadcast domain, starting to
-     * transmit simultaneously as reaction to some broadcat packet,
+     * transmit simultaneously as reaction to some broadcast packet,
      * elide each other causing an endless loop of retransmissions
      */
     random_init(_xtimer_now());
@@ -525,14 +518,6 @@ gpio_clear(DEBUG_PIN);
 
     // activate tx mode 
     ata8510_set_state(dev, ATA8510_STATE_TX_ON);
-
-    // wait until trasmission ends
-    i=0;
-    while(dev->busy) {
-        i++;
-        xtimer_usleep(0);
-    }
-    DEBUG("END busy loops: %d\n", i);
 
 #ifdef MODULE_NETSTATS_L2
     netdev->stats.tx_bytes += len;
@@ -593,27 +578,39 @@ static int _recv(netdev2_t *netdev, void *buf, size_t len, void *info)
 
         switch (l2l) {
 			case 2:
-			    //printf("2: %02x %02x\n", dst[0], dst[1]);
+			    printf("2: %02x %02x\n", dst[0], dst[1]);
 				if ((dst[0] == 0xff && dst[1] == 0xff) ||
 				     (memcmp (dev->netdev.short_addr, dst, 2) == 0)) {
-				        //printf("2: OK\n");
+				        printf("2: OK\n");
 				    } else
                         return -ENOBUFS;
 			break;
 
             case 8:
-                //for (int x=0; x < 8; x++)
-                //   printf("%02x ", dst[x]);
-                //printf("\n");
-				if ((dst[0] == 0xff && dst[1] == 0xff && dst[2] == 0xff && dst[3] == 0xff && dst[4] == 0xff && dst[5] == 0xff && dst[6] == 0xff && dst[7] == 0xff) 
+                printf("8: ");
+                for (int x=0; x < 8; x++)
+                   printf("%02x ", dst[x]);
+                printf("\n8: ");
+                for (int x=0; x < 8; x++)
+                   printf("%02x ", dev->netdev.long_addr[x]);
+                printf("\n");
+
+				if ((dst[0] == 0x02 && dst[1] == 0x00 && dst[2] == 0x00 && dst[3] == 0x00 && dst[4] == 0x00 && dst[5] == 0x00 && dst[6] == 0x00 && dst[7] == 0x01) 
+					||
+				    (dst[0] == 0xff && dst[1] == 0xff && dst[2] == 0xff && dst[3] == 0xff && dst[4] == 0xff && dst[5] == 0xff && dst[6] == 0xff && dst[7] == 0xff) 
 				    || (memcmp (&(dev->netdev.long_addr[6]), dst+6, 2) == 0) ) {
-						//printf("8: OK\n");
+						printf("8: OK\n");
 					} else
 					    return -ENOBUFS;
 			break;
 
 			default:
-			   printf ("BAD MAC 802.15.4 LEN: %d\n", l2l);
+			   printf ("BAD MAC 802.15.4 L2 length: %d\n", l2l);
+				for (i=0; i<pkt_len; i++) {
+					printf(" %02x", ((char *)buf)[i]);
+					if ((i%16) == 0) printf("\n\t");
+				}
+				printf("\n");
 		}
 	}
 
