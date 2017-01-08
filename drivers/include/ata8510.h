@@ -53,6 +53,9 @@ extern "C" {
 #define ATA8510_DEFAULT_ADDR_LONG     (0x1222334455667788)
 /** @} */
 
+
+#define ATA8510_OPT_PROMISCUOUS		0x55
+
 /**
  * @brief struct holding all params needed for device initialization
  */
@@ -96,6 +99,7 @@ typedef struct {
     int sys_errors; 
     int unknown_case;
     int blocked;
+    bool f_promiscous;
 
     /** @} */
 } ata8510_t;

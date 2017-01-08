@@ -157,6 +157,12 @@ void ata8510_set_cca_threshold(ata8510_t *dev, int8_t value)
 
 void ata8510_set_option(ata8510_t *dev, uint16_t option, bool state)
 {
+	switch (option) {
+		case ATA8510_OPT_PROMISCUOUS:
+			dev->f_promiscous = state;
+		default:
+			break;
+	}
 }
 
 void ata8510_set_state(ata8510_t *dev, uint8_t state)

@@ -568,9 +568,9 @@ static int _recv(netdev2_t *netdev, void *buf, size_t len, void *info)
 
     /*
      * check the L2 destination address
-     *
+     * pass all in case the if has been put in promiscous mode
      */
-    {
+    if (dev->f_promiscous == false) {
 		le_uint16_t dst_pan;
 		uint8_t dst[8];
 
@@ -881,12 +881,21 @@ DEBUG("_set: opt=%d\n", opt);
 //          res = sizeof(netopt_enable_t);
 //          break;
 
-//      case NETOPT_PROMISCUOUSMODE:
-//          ata8510_set_option(dev, ATA8510_OPT_PROMISCUOUS,
-//                               ((bool *)val)[0]);
-//          res = sizeof(netopt_enable_t);
-//          break;
+      case NETOPT_PROMISCUOUSMODE:
+          ata8510_set_option(dev, ATA8510_OPT_PROMISCUOUS,
+                               ((bool *)val)[0]);
+          res = sizeof(netopt_enable_t);
+          break;
 
+      case NETOPT_RAWMODE:
+          res = sizeof(netopt_enable_t);
+          break;
+
+      case NETOPT_CHANNEL:
+          res = sizeof(netopt_enable_t);
+          break;
+ 
+	
 //      case NETOPT_RX_START_IRQ:
 //          ata8510_set_option(dev, ATA8510_OPT_TELL_RX_START,
 //                               ((bool *)val)[0]);

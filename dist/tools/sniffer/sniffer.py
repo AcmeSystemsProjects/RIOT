@@ -69,9 +69,9 @@ def configure_interface(port, channel):
     print('ifconfig %d set chan %d' % (iface, channel), file=sys.stderr)
     print('ifconfig %d raw' % iface, file=sys.stderr)
     print('ifconfig %d promisc' % iface, file=sys.stderr)
-    port.write(('ifconfig %d set chan %d\n' % (iface, channel)).encode())
-    port.write(('ifconfig %d raw\n' % iface).encode())
-    port.write(('ifconfig %d promisc\n' % iface).encode())
+    #port.write(('ifconfig %d set chan %d\n' % (iface, channel)).encode())
+    #port.write(('ifconfig %d raw\n' % iface).encode())
+    #port.write(('ifconfig %d promisc\n' % iface).encode())
 
 
 def generate_pcap(port, out):
@@ -83,6 +83,7 @@ def generate_pcap(port, out):
     sys.stderr.write("RX: %i\r" % count)
     while True:
         line = port.readline().rstrip()
+        print ("---> %s \n" % line.decode() )
 
         pkt_header = re.match(r">? *rftest-rx --- len 0x(\w\w).*",
                               line.decode())
@@ -99,6 +100,7 @@ def generate_pcap(port, out):
 
         pkt_data = re.match(r"(0x\w\w )+", line.decode())
         if pkt_data:
+            print ("DATA")
             for part in line.decode().split(' '):
                 byte = re.match(r"0x(\w\w)", part)
                 if byte:
